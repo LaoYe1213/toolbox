@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>双总工具箱</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: linear-gradient(160deg, #2f7fbf, #2e9e6b);
+    min-height: 100vh; color: #2c3640;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 40px 18px 60px;
+  }
+  h1 { color: #fff; font-size: 24px; letter-spacing: 3px; }
+  .sub { color: rgba(255,255,255,.85); font-size: 13px; margin-top: 8px; }
+  .grid { display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 400px; margin-top: 34px; }
+  a.card {
+    display: block; background: #fff; border-radius: 18px; padding: 22px 20px;
+    text-decoration: none; color: #2c3640;
+    box-shadow: 0 6px 20px rgba(0,0,0,.15);
+    transition: transform .15s;
+  }
+  a.card:active { transform: scale(.97); }
+  .card .icon { font-size: 34px; }
+  .card .name { font-size: 19px; font-weight: 700; margin-top: 10px; }
+  .card .desc { font-size: 13px; color: #6b7684; margin-top: 6px; line-height: 1.6; }
+  .tip { color: rgba(255,255,255,.75); font-size: 12px; margin-top: 34px; text-align: center; line-height: 1.8; }
+</style>
+</head>
+<body>
+  <h1>双总工具箱</h1>
+  <div class="sub">常用小工具 · 手机电脑都能用</div>
+
+  <div class="grid">
+    <a class="card" href="./吃药打卡.html">
+      <div class="icon">💊</div>
+      <div class="name">吃药打卡</div>
+      <div class="desc">每日服药记录 · 剂量与时间 · 日历回顾 · 历史明细</div>
+    </a>
+    <a class="card" href="./体积换算.html">
+      <div class="icon">🧪</div>
+      <div class="name">体积换算 · 加量计算</div>
+      <div class="desc">升/毫升/微升换算 · 百分比千分比万分比加量 · 内外添加配比</div>
+    </a>
+  </div>
+
+  <div class="tip">提示：在手机浏览器里选「添加到主屏幕」，<br>以后就能像 App 一样一点就开</div>
+</body>
+</html>
