@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>吃药打卡</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --green: #2e9e6b;
+    --green-light: #e8f6ef;
+    --green-deep: #1f7a50;
+    --red: #d9534f;
+    --gray: #9aa5b1;
+    --text: #2c3640;
+    --text-light: #6b7684;
+    --bg: #f4f6f8;
+    --card: #ffffff;
+    --border: #e4e9ee;
+  }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 20px 16px; }
+
+  /* ===== 顶部 ===== */
+  header {
+    background: linear-gradient(135deg, #2e9e6b, #35b57a);
+    color: #fff;
+    padding: 26px 20px 22px;
+    border-radius: 0 0 22px 22px;
+    box-shadow: 0 4px 16px rgba(46,158,107,.25);
+  }
+  header .top-row { display: flex; justify-content: space-between; align-items: center; }
+  header h1 { font-size: 22px; letter-spacing: 2px; }
+  .backup-btns button {
+    background: rgba(255,255,255,.18);
+    border: 1px solid rgba(255,255,255,.45);
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 14px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-left: 6px;
+  }
+  .backup-btns button:hover { background: rgba(255,255,255,.3); }
+  .clock { margin-top: 10px; font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .date-line { margin-top: 2px; font-size: 14px; opacity: .92; }
+
+  /* ===== 今日打卡 ===== */
+  .section-title {
+    display: flex; justify-content: space-between; align-items: center;
+    margin: 24px 0 12px;
+  }
+  .section-title h2 { font-size: 17px; }
+  .section-title .sub { font-size: 12px; color: var(--text-light); }
+
+  .med-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  }
+  .med-card.done { background: var(--green-light); border-color: #bfe6d2; }
+  .med-head { display: flex; justify-content: space-between; align-items: flex-start; }
+  .med-name { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .med-badge {
+    font-size: 12px; font-weight: 400; color: var(--text-light);
+    background: var(--bg); padding: 2px 10px; border-radius: 10px;
+  }
+  .med-card.done .med-badge { background: #d4eedf; color: var(--green-deep); }
+  .done-flag { font-size: 13px; color: var(--green-deep); font-weight: 700; }
+  .med-ops { display: flex; gap: 8px; }
+  .med-ops button {
+    background: none; border: none; color: var(--gray);
+    font-size: 13px; cursor: pointer; padding: 2px 4px;
+  }
+  .med-ops button:hover { color: var(--red); }
+
+  /* 剂量步进器 */
+  .dose-row {
+    display: flex; align-items: center; gap: 10px;
+    margin: 12px 0; font-size: 14px; color: var(--text-light);
+  }
+  .stepper { display: flex; align-items: center; gap: 0; }
+  .stepper button {
+    width: 30px; height: 30px; border: 1px solid var(--border);
+    background: var(--card); font-size: 17px; color: var(--green);
+    cursor: pointer; border-radius: 8px 0 0 8px;
+  }
+  .stepper button:last-child { border-radius: 0 8px 8px 0; }
+  .stepper .val {
+    min-width: 44px; height: 30px; display: flex; align-items: center; justify-content: center;
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    font-size: 15px; font-weight: 700; color: var(--text);
+  }
+  .dose-unit { font-size: 13px; }
+
+  /* 次数按钮 */
+  .slots { display: flex; gap: 10px; flex-wrap: wrap; }
+  .slot {
+    flex: 1; min-width: 100px;
+    border: 2px dashed #cfd8e0;
+    border-radius: 12px;
+    padding: 10px 8px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--card);
+    transition: all .15s;
+    user-select: none;
+  }
+  .slot:hover { border-color: var(--green); }
+  .slot .slot-label { font-size: 12px; color: var(--text-light); }
+  .slot .slot-main { font-size: 15px; font-weight: 700; margin-top: 4px; color: var(--green); }
+  .slot .slot-dose { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+  .slot.recorded {
+    border: 2px solid var(--green);
+    background: var(--green-light);
+    cursor: default;
+  }
+  .slot.recorded .slot-main { color: var(--green-deep); }
+  .slot.recorded:hover { border-color: var(--red); }
+  .slot.recorded:hover .slot-main::after { content: " ✕撤销"; color: var(--red); font-size: 11px; }
+
+  .add-med-btn {
+    width: 100%;
+    padding: 13px;
+    border: 2px dashed #cfd8e0;
+    border-radius: 14px;
+    background: none;
+    color: var(--green);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+  .add-med-btn:hover { border-color: var(--green); background: var(--green-light); }
+
+  .empty-tip {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 28px 16px; text-align: center;
+    color: var(--text-light); font-size: 14px; line-height: 2;
+  }
+
+  /* ===== 历史 ===== */
+  .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .tabs button {
+    padding: 7px 18px; border-radius: 18px; border: 1px solid var(--border);
+    background: var(--card); font-size: 13px; cursor: pointer; color: var(--text-light);
+  }
+  .tabs button.active { background: var(--green); color: #fff; border-color: var(--green); }
+
+  /* 日历 */
+  .cal-box { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; }
+  .cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .cal-nav button {
+    background: var(--bg); border: none; width: 32px; height: 32px;
+    border-radius: 50%; font-size: 15px; cursor: pointer; color: var(--text);
+  }
+  .cal-nav .cal-title { font-size: 15px; font-weight: 700; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+  .cal-week { text-align: center; font-size: 12px; color: var(--text-light); padding: 3px 0; }
+  .cal-day {
+    aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border-radius: 10px; font-size: 14px; position: relative;
+    color: var(--text);
+  }
+  .cal-day.other { color: #d4dade; }
+  .cal-day.today { outline: 2px solid var(--green); outline-offset: -2px; font-weight: 700; }
+  .cal-day.has { background: var(--green-light); color: var(--green-deep); font-weight: 700; }
+  .cal-day.full { background: var(--green); color: #fff; }
+  .cal-day.missed { background: #fdf0ef; color: #d98a87; }
+  .cal-day .dot {
+    position: absolute; bottom: 5px; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--green);
+  }
+  .cal-day.missed .dot { background: var(--red); }
+  .cal-legend {
+    display: flex; gap: 14px; margin-top: 10px; font-size: 12px; color: var(--text-light); flex-wrap: wrap;
+  }
+  .cal-legend span { display: flex; align-items: center; gap: 5px; }
+  .cal-legend i { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+
+  /* 历史列表 */
+  .his-list { }
+  .his-date-group { background: var(--card); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 10px; overflow: hidden; }
+  .his-date {
+    padding: 10px 14px; font-size: 14px; font-weight: 700;
+    background: var(--bg); display: flex; justify-content: space-between;
+  }
+  .his-date .cnt { font-weight: 400; font-size: 12px; color: var(--text-light); }
+  .his-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; border-top: 1px solid var(--border); font-size: 14px;
+  }
+  .his-item .t { color: var(--green-deep); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .his-item .m { color: var(--text); }
+  .his-item .d { color: var(--text-light); font-size: 13px; }
+  .his-item .del { background: none; border: none; color: var(--gray); cursor: pointer; font-size: 13px; }
+  .his-item .del:hover { color: var(--red); }
+  .his-empty { text-align: center; color: var(--text-light); padding: 24px; font-size: 14px; }
+
+  /* ===== 弹窗 ===== */
+  .mask {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4);
+    z-index: 10; align-items: center; justify-content: center; padding: 16px;
+  }
+  .mask.show { display: flex; }
+  .modal {
+    background: #fff; border-radius: 18px; padding: 22px;
+    width: 100%; max-width: 360px;
+  }
+  .modal h3 { font-size: 17px; margin-bottom: 16px; }
+  .form-row { margin-bottom: 14px; }
+  .form-row label { display: block; font-size: 13px; color: var(--text-light); margin-bottom: 6px; }
+  .form-row input, .form-row select {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+    border-radius: 10px; font-size: 15px; outline: none;
+  }
+  .form-row input:focus, .form-row select:focus { border-color: var(--green); }
+  .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+  .modal-btns button {
+    flex: 1; padding: 11px; border-radius: 12px; border: none;
+    font-size: 15px; cursor: pointer; font-weight: 700;
+  }
+  .btn-cancel { background: var(--bg); color: var(--text-light); }
+  .btn-ok { background: var(--green); color: #fff; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%) translateY(80px);
+    background: rgba(44,54,64,.92); color: #fff; padding: 10px 22px;
+    border-radius: 22px; font-size: 14px; transition: transform .25s; z-index: 20;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="top-row">
+    <h1>💊 吃药打卡</h1>
+    <div class="backup-btns">
+      <button onclick="exportData()">导出备份</button>
+      <button onclick="document.getElementById('importFile').click()">导入</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
+    </div>
+  </div>
+  <div class="clock" id="clock">--:--:--</div>
+  <div class="date-line" id="dateLine"></div>
+</header>
+
+<div class="wrap">
+
+  <div class="section-title">
+    <h2>今日打卡</h2>
+    <span class="sub" id="todaySummary"></span>
+  </div>
+  <div id="medList"></div>
+  <button class="add-med-btn" onclick="openMedModal()">＋ 添加药品</button>
+
+  <div class="section-title">
+    <h2>历史记录</h2>
+  </div>
+  <div class="tabs">
+    <button id="tabCal" class="active" onclick="switchTab('cal')">📅 日历</button>
+    <button id="tabList" onclick="switchTab('list')">📋 明细</button>
+  </div>
+  <div id="calView">
+    <div class="cal-box">
+      <div class="cal-nav">
+        <button onclick="calMove(-1)">‹</button>
+        <span class="cal-title" id="calTitle"></span>
+        <button onclick="calMove(1)">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-legend">
+        <span><i style="background:var(--green)"></i>全部吃完</span>
+        <span><i style="background:var(--green-light);border:1px solid #bfe6d2"></i>有打卡</span>
+        <span><i style="background:#fdf0ef;border:1px solid #f2d7d5"></i>漏服</span>
+      </div>
+    </div>
+  </div>
+  <div id="listView" style="display:none">
+    <div class="his-list" id="hisList"></div>
+  </div>
+
+</div>
+
+<!-- 添加/编辑药品弹窗 -->
+<div class="mask" id="medMask">
+  <div class="modal">
+    <h3 id="modalTitle">添加药品</h3>
+    <div class="form-row">
+      <label>药名</label>
+      <input type="text" id="fName" placeholder="例如：维生素D" maxlength="20">
+    </div>
+    <div class="form-row">
+      <label>每天吃几次</label>
+      <select id="fTimes">
+        <option value="1">1 次</option>
+        <option value="2">2 次</option>
+        <option value="3" selected>3 次</option>
+        <option value="4">4 次</option>
+        <option value="5">5 次</option>
+        <option value="6">6 次</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>每次几颗</label>
+      <input type="number" id="fDose" value="1" min="0.5" step="0.5">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeMedModal()">取消</button>
+      <button class="btn-ok" onclick="saveMed()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+var STORE_KEY = "medCheckinData_v1";
+var data = loadData();
+var calYear, calMonth; // 当前日历显示的年月
+var editingMedId = null;
+
+function defaultData() { return { meds: [], records: [] }; }
+function loadData() {
+  try {
+    var raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return defaultData();
+    var d = JSON.parse(raw);
+    if (!d.meds) d.meds = [];
+    if (!d.records) d.records = [];
+    return d;
+  } catch (e) { return defaultData(); }
+}
+function saveData() { localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
+
+/* ---------- 工具 ---------- */
+function pad(n) { return (n < 10 ? "0" : "") + n; }
+function todayStr() {
+  var d = new Date();
+  return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+}
+function fmtTime(iso) {
+  var d = new Date(iso);
+  return pad(d.getHours()) + ":" + pad(d.getMinutes());
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function toast(msg) {
+  var t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(function () { t.classList.remove("show"); }, 1800);
+}
+function fmtDose(d) { return (d % 1 === 0) ? d : d.toFixed(1); }
+
+/* ---------- 时钟 ---------- */
+function tickClock() {
+  var d = new Date();
+  document.getElementById("clock").textContent =
+    pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+  var week = ["日", "一", "二", "三", "四", "五", "六"][d.getDay()];
+  document.getElementById("dateLine").textContent =
+    d.getFullYear() + "年" + (d.getMonth() + 1) + "月" + d.getDate() + "日 星期" + week;
+}
+setInterval(tickClock, 1000); tickClock();
+
+/* ---------- 今日打卡 ---------- */
+function recordsOf(medId, dateStr) {
+  return data.records.filter(function (r) { return r.medId === medId && r.date === dateStr; });
+}
+function renderToday() {
+  var box = document.getElementById("medList");
+  var today = todayStr();
+  box.innerHTML = "";
+
+  if (data.meds.length === 0) {
+    box.innerHTML = '<div class="empty-tip">还没有添加药品<br>点击下方「＋ 添加药品」开始记录<br>数据保存在本机浏览器中</div>';
+    document.getElementById("todaySummary").textContent = "";
+    return;
+  }
+
+  var totalSlots = 0, doneSlots = 0;
+  data.meds.forEach(function (med) {
+    var recs = recordsOf(med.id, today);
+    var done = recs.length >= med.times;
+    totalSlots += med.times; doneSlots += recs.length;
+
+    var card = document.createElement("div");
+    card.className = "med-card" + (done ? " done" : "");
+
+    var head = '<div class="med-head"><div class="med-name">' + esc(med.name) +
+      '<span class="med-badge">每日 ' + med.times + ' 次 · 每次 ' + fmtDose(med.dose) + ' 颗</span></div>' +
+      '<div style="display:flex;align-items:center;gap:6px">' +
+      (done ? '<span class="done-flag">✓ 今日完成</span>' : '') +
+      '<div class="med-ops"><button onclick="openMedModal(\'' + med.id + '\')">编辑</button>' +
+      '<button onclick="deleteMed(\'' + med.id + '\')">删除</button></div></div></div>';
+
+    var doseRow = '<div class="dose-row">本次剂量（颗）' +
+      '<div class="stepper">' +
+      '<button onclick="stepDose(\'' + med.id + '\',-0.5)">−</button>' +
+      '<div class="val" id="dose-' + med.id + '">' + fmtDose(med.curDose != null ? med.curDose : med.dose) + '</div>' +
+      '<button onclick="stepDose(\'' + med.id + '\',0.5)">＋</button></div></div>';
+
+    var slots = '<div class="slots">';
+    for (var i = 0; i < med.times; i++) {
+      var rec = recs.find(function (r) { return r.slot === i; });
+      if (rec) {
+        slots += '<div class="slot recorded" onclick="undoRecord(\'' + rec.id + '\')" title="点击撤销">' +
+          '<div class="slot-label">第 ' + (i + 1) + ' 次</div>' +
+          '<div class="slot-main">' + fmtTime(rec.time) + '</div>' +
+          '<div class="slot-dose">' + fmtDose(rec.dose) + ' 颗</div></div>';
+      } else {
+        slots += '<div class="slot" onclick="checkin(\'' + med.id + '\',' + i + ')">' +
+          '<div class="slot-label">第 ' + (i + 1) + ' 次</div>' +
+          '<div class="slot-main">打卡</div>' +
+          '<div class="slot-dose">点击记录</div></div>';
+      }
+    }
+    slots += "</div>";
+
+    card.innerHTML = head + doseRow + slots;
+    box.appendChild(card);
+  });
+
+  document.getElementById("todaySummary").textContent =
+    "今日进度 " + doneSlots + " / " + totalSlots;
+}
+
+function checkin(medId, slot) {
+  var med = data.meds.find(function (m) { return m.id === medId; });
+  if (!med) return;
+  var dose = med.curDose != null ? med.curDose : med.dose;
+  data.records.push({
+    id: uid(), medId: medId, date: todayStr(),
+    time: new Date().toISOString(), dose: dose, slot: slot
+  });
+  saveData();
+  toast("已记录 " + fmtTime(new Date().toISOString()) + " · " + med.name + " " + fmtDose(dose) + " 颗");
+  renderAll();
+}
+function undoRecord(recId) {
+  var rec = data.records.find(function (r) { return r.id === recId; });
+  if (!rec) return;
+  if (!confirm("撤销这条打卡记录？（" + fmtTime(rec.time) + "）")) return;
+  data.records = data.records.filter(function (r) { return r.id !== recId; });
+  saveData(); renderAll(); toast("已撤销");
+}
+function stepDose(medId, delta) {
+  var med = data.meds.find(function (m) { return m.id === medId; });
+  if (!med) return;
+  var v = (med.curDose != null ? med.curDose : med.dose) + delta;
+  if (v < 0.5) v = 0.5;
+  if (v > 20) v = 20;
+  med.curDose = v;
+  saveData();
+  document.getElementById("dose-" + medId).textContent = fmtDose(v);
+}
+
+/* ---------- 药品管理 ---------- */
+function openMedModal(medId) {
+  editingMedId = medId || null;
+  var mask = document.getElementById("medMask");
+  if (medId) {
+    var med = data.meds.find(function (m) { return m.id === medId; });
+    document.getElementById("modalTitle").textContent = "编辑药品";
+    document.getElementById("fName").value = med.name;
+    document.getElementById("fTimes").value = med.times;
+    document.getElementById("fDose").value = med.dose;
+  } else {
+    document.getElementById("modalTitle").textContent = "添加药品";
+    document.getElementById("fName").value = "";
+    document.getElementById("fTimes").value = "3";
+    document.getElementById("fDose").value = "1";
+  }
+  mask.classList.add("show");
+  setTimeout(function () { document.getElementById("fName").focus(); }, 50);
+}
+function closeMedModal() { document.getElementById("medMask").classList.remove("show"); }
+function saveMed() {
+  var name = document.getElementById("fName").value.trim();
+  var times = parseInt(document.getElementById("fTimes").value, 10);
+  var dose = parseFloat(document.getElementById("fDose").value);
+  if (!name) { toast("请填写药名"); return; }
+  if (isNaN(dose) || dose < 0.5) dose = 1;
+  if (editingMedId) {
+    var med = data.meds.find(function (m) { return m.id === editingMedId; });
+    med.name = name; med.times = times; med.dose = dose; med.curDose = dose;
+  } else {
+    data.meds.push({ id: uid(), name: name, times: times, dose: dose, curDose: dose, createdAt: todayStr() });
+  }
+  saveData(); closeMedModal(); renderAll(); toast("已保存");
+}
+function deleteMed(id) {
+  var med = data.meds.find(function (m) { return m.id === id; });
+  if (!med) return;
+  var cnt = recordsOf(id).length; // 这里没传date，返回全部 — 修正见下
+  cnt = data.records.filter(function (r) { return r.medId === id; }).length;
+  var msg = "删除「" + med.name + "」？";
+  if (cnt > 0) msg += "\n其 " + cnt + " 条历史记录也会一并删除。";
+  if (!confirm(msg)) return;
+  data.meds = data.meds.filter(function (m) { return m.id !== id; });
+  data.records = data.records.filter(function (r) { return r.medId !== id; });
+  saveData(); renderAll(); toast("已删除");
+}
+
+/* ---------- 历史：日历 ---------- */
+function switchTab(tab) {
+  document.getElementById("tabCal").classList.toggle("active", tab === "cal");
+  document.getElementById("tabList").classList.toggle("active", tab === "list");
+  document.getElementById("calView").style.display = tab === "cal" ? "" : "none";
+  document.getElementById("listView").style.display = tab === "list" ? "" : "none";
+}
+function calMove(delta) {
+  calMonth += delta;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+function recordsByDate(dateStr) {
+  return data.records.filter(function (r) { return r.date === dateStr; });
+}
+function expectedSlotsOn(dateStr) {
+  // 当天应服总次数：只统计创建日期<=该天的药
+  return data.meds.reduce(function (s, m) {
+    return s + (m.createdAt && m.createdAt > dateStr ? 0 : m.times);
+  }, 0);
+}
+function renderCalendar() {
+  document.getElementById("calTitle").textContent = calYear + " 年 " + (calMonth + 1) + " 月";
+  var grid = document.getElementById("calGrid");
+  grid.innerHTML = "";
+  ["日", "一", "二", "三", "四", "五", "六"].forEach(function (w) {
+    var el = document.createElement("div");
+    el.className = "cal-week"; el.textContent = w;
+    grid.appendChild(el);
+  });
+
+  var first = new Date(calYear, calMonth, 1);
+  var startWeek = first.getDay();
+  var daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  var today = todayStr();
+  var now = new Date();
+
+  // 上月补位
+  var prevDays = new Date(calYear, calMonth, 0).getDate();
+  for (var i = 0; i < startWeek; i++) {
+    var el = document.createElement("div");
+    el.className = "cal-day other"; el.textContent = prevDays - startWeek + 1 + i;
+    grid.appendChild(el);
+  }
+  // 本月
+  for (var d = 1; d <= daysInMonth; d++) {
+    var ds = calYear + "-" + pad(calMonth + 1) + "-" + pad(d);
+    var el = document.createElement("div");
+    el.className = "cal-day";
+    el.textContent = d;
+    var recs = recordsByDate(ds);
+    var expected = expectedSlotsOn(ds);
+    var isPast = new Date(calYear, calMonth, d) < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (ds === today) el.classList.add("today");
+    if (recs.length > 0) {
+      el.classList.add("has");
+      if (expected > 0 && recs.length >= expected) el.classList.add("full");
+      var dot = document.createElement("i"); dot.className = "dot"; el.appendChild(dot);
+      el.title = ds + "：打卡 " + recs.length + " 次 / 应服 " + expected + " 次";
+    } else if (isPast && expected > 0) {
+      el.classList.add("missed");
+      el.title = ds + "：漏服（应服 " + expected + " 次）";
+    }
+    grid.appendChild(el);
+  }
+  // 下月补位
+  var totalCells = Math.ceil((startWeek + daysInMonth) / 7) * 7;
+  for (var i = 1; i <= totalCells - startWeek - daysInMonth; i++) {
+    var el = document.createElement("div");
+    el.className = "cal-day other"; el.textContent = i;
+    grid.appendChild(el);
+  }
+}
+
+/* ---------- 历史：明细 ---------- */
+function renderHistory() {
+  var box = document.getElementById("hisList");
+  var byDate = {};
+  data.records.forEach(function (r) {
+    (byDate[r.date] = byDate[r.date] || []).push(r);
+  });
+  var dates = Object.keys(byDate).sort().reverse();
+  if (dates.length === 0) {
+    box.innerHTML = '<div class="his-empty">还没有打卡记录</div>';
+    return;
+  }
+  box.innerHTML = "";
+  dates.slice(0, 60).forEach(function (ds) {
+    var recs = byDate[ds].sort(function (a, b) { return a.time < b.time ? -1 : 1; });
+    var group = document.createElement("div");
+    group.className = "his-date-group";
+    var head = '<div class="his-date"><span>' + ds + '</span><span class="cnt">' + recs.length + ' 条记录</span></div>';
+    var items = recs.map(function (r) {
+      var med = data.meds.find(function (m) { return m.id === r.medId; });
+      return '<div class="his-item">' +
+        '<span class="t">' + fmtTime(r.time) + '</span>' +
+        '<span class="m">' + esc(med ? med.name : "已删除的药") + '</span>' +
+        '<span class="d">' + fmtDose(r.dose) + ' 颗</span>' +
+        '<button class="del" onclick="undoRecord(\'' + r.id + '\')">删除</button></div>';
+    }).join("");
+    group.innerHTML = head + items;
+    box.appendChild(group);
+  });
+}
+
+/* ---------- 备份 ---------- */
+function exportData() {
+  var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "吃药打卡备份_" + todayStr() + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast("备份已导出");
+}
+function importData(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function () {
+    try {
+      var d = JSON.parse(reader.result);
+      if (!d.meds || !d.records) throw new Error("格式不对");
+      if (!confirm("导入会覆盖当前所有数据，确定继续？")) return;
+      data = d; saveData(); renderAll(); toast("导入成功");
+    } catch (e) { toast("文件格式不正确"); }
+    input.value = "";
+  };
+  reader.readAsText(file, "utf-8");
+}
+
+/* ---------- 渲染入口 ---------- */
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function renderAll() {
+  renderToday();
+  renderCalendar();
+  renderHistory();
+}
+var now0 = new Date();
+calYear = now0.getFullYear(); calMonth = now0.getMonth();
+renderAll();
+
+// 跨天自动刷新（比如页面挂一整天）
+var lastDate = todayStr();
+setInterval(function () {
+  if (todayStr() !== lastDate) { lastDate = todayStr(); renderAll(); }
+}, 30000);
+</script>
+</body>
+</html>
