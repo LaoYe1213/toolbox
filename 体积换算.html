@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>体积换算 · 加量计算</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --blue: #2f7fbf;
+    --blue-deep: #1f5e91;
+    --blue-light: #e9f3fa;
+    --green: #2e9e6b;
+    --green-light: #e8f6ef;
+    --orange: #d98324;
+    --orange-light: #fdf3e7;
+    --text: #2c3640;
+    --text-light: #6b7684;
+    --bg: #f4f6f8;
+    --card: #ffffff;
+    --border: #e4e9ee;
+  }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 20px 16px; }
+
+  header {
+    background: linear-gradient(135deg, #2f7fbf, #3f9bd8);
+    color: #fff; padding: 24px 20px; border-radius: 0 0 22px 22px;
+    box-shadow: 0 4px 16px rgba(47,127,191,.25);
+  }
+  header h1 { font-size: 21px; letter-spacing: 2px; }
+  header p { margin-top: 6px; font-size: 13px; opacity: .92; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 18px; margin-top: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  }
+  .card h2 { font-size: 16px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .card .hint { font-size: 12px; color: var(--text-light); margin-bottom: 14px; line-height: 1.6; }
+
+  .input-row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .field { flex: 1; min-width: 120px; }
+  .field label { display: block; font-size: 12px; color: var(--text-light); margin-bottom: 5px; }
+  .field .input-box { display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .field input {
+    flex: 1; border: none; outline: none; padding: 10px 12px;
+    font-size: 16px; font-variant-numeric: tabular-nums; min-width: 0;
+  }
+  .field input:focus { background: #fbfdff; }
+  .field select {
+    border: none; border-left: 1px solid var(--border); outline: none;
+    background: var(--bg); padding: 0 8px; font-size: 14px; cursor: pointer; color: var(--text);
+    flex: none; white-space: nowrap;
+  }
+  .field select.kind-select { width: 90px; padding-left: 6px; padding-right: 4px; font-size: 13px; }
+
+  .result-box { background: var(--bg); border-radius: 12px; padding: 12px 14px; }
+  .result-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+  .result-item {
+    flex: 1; min-width: 140px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px; text-align: center;
+  }
+  .result-item .r-label { font-size: 12px; color: var(--text-light); }
+  .result-item .r-val { font-size: 22px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .result-item .r-unit { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+  .result-item.hl { background: var(--blue-light); border-color: #c5e0f2; }
+  .result-item.hl .r-val { color: var(--blue-deep); }
+
+  /* 比例对比表 */
+  .cmp-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .cmp-table th, .cmp-table td { padding: 9px 8px; text-align: center; border-bottom: 1px solid var(--border); }
+  .cmp-table th { font-size: 12px; color: var(--text-light); font-weight: 400; }
+  .cmp-table td { font-variant-numeric: tabular-nums; }
+  .cmp-table td:first-child { text-align: left; font-weight: 700; }
+  .cmp-table tr:last-child td { border-bottom: none; }
+  .tag {
+    display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 9px; margin-left: 6px; font-weight: 400;
+  }
+  .tag-blue { background: var(--blue-light); color: var(--blue-deep); }
+  .tag-orange { background: var(--orange-light); color: var(--orange); }
+  .tag-green { background: var(--green-light); color: var(--green); }
+  .tr-blue td { background: #f4f9fd; }
+  .tr-orange td { background: #fdf8f0; }
+  .tr-green td { background: #f5faf7; }
+
+  /* 内外添加 */
+  .mix-result { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+  .mix-block {
+    flex: 1; min-width: 240px; border-radius: 14px; padding: 14px;
+    border: 1px solid var(--border); background: var(--card);
+  }
+  .mix-block.in { background: var(--blue-light); border-color: #c5e0f2; }
+  .mix-block.out { background: var(--orange-light); border-color: #f2ddb8; }
+  .mix-block .m-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+  .mix-block .m-sub { font-size: 11px; color: var(--text-light); margin-top: 2px; margin-bottom: 10px; }
+  .mix-line { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; border-bottom: 1px dashed rgba(0,0,0,.08); }
+  .mix-line:last-child { border-bottom: none; }
+  .mix-line .ml-name { font-size: 13px; color: var(--text); }
+  .mix-line .ml-val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .mix-block.in .ml-val { color: var(--blue-deep); }
+  .mix-block.out .ml-val { color: #b06a15; }
+  .mix-line.total .ml-val { font-size: 15px; }
+
+  .placeholder { text-align: center; color: var(--text-light); font-size: 13px; padding: 18px 0; }
+  .formula-note { font-size: 11px; color: #9aa5b1; margin-top: 10px; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🧪 体积换算 · 加量计算</h1>
+  <p>升 / 毫升 / 微升换算 · 百分比/千分比/万分比加量 · 内外添加配比</p>
+</header>
+
+<div class="wrap">
+
+  <!-- ========== 功能一：体积换算 ========== -->
+  <div class="card">
+    <h2>① 体积换算</h2>
+    <p class="hint">输入数值并选择单位，三种单位结果同时显示</p>
+    <div class="input-row">
+      <div class="field">
+        <label>输入体积</label>
+        <div class="input-box">
+          <input type="number" id="cvVal" placeholder="如 2.5" oninput="renderConvert()">
+          <select id="cvUnit" onchange="renderConvert()">
+            <option value="L">升 L</option>
+            <option value="mL" selected>毫升 mL</option>
+            <option value="uL">微升 µL</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="result-box">
+      <div class="result-grid" id="cvResults">
+        <div class="placeholder">输入数值后自动换算</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 功能二：加量计算 ========== -->
+  <div class="card">
+    <h2>② 加量计算</h2>
+    <p class="hint">输入基准体积和比例数值，选择按百分比 / 千分比 / 万分比计算，自动得出加入量与加完后的总体积</p>
+    <div class="input-row">
+      <div class="field">
+        <label>基准体积</label>
+        <div class="input-box">
+          <input type="number" id="adVol" placeholder="如 1000" oninput="renderAdd()">
+          <select id="adUnit" onchange="renderAdd()">
+            <option value="L">L</option>
+            <option value="mL" selected>mL</option>
+            <option value="uL">µL</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>比例数值</label>
+        <div class="input-box">
+          <input type="number" id="adRatio" placeholder="如 5" oninput="renderAdd()">
+          <select id="adKind" class="kind-select" onchange="renderAdd()">
+            <option value="pct" selected>百分比 %</option>
+            <option value="pm">千分比 ‰</option>
+            <option value="ppth">万分比 ‱</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="result-box" id="adResults">
+      <div class="placeholder">输入后自动计算</div>
+    </div>
+    <p class="formula-note">计算方式：加入量 = 基准体积 × 比例；总体积 = 基准体积 + 加入量（外加式，即往基准里另外加入）</p>
+  </div>
+
+  <!-- ========== 功能三：内添加 / 外添加 ========== -->
+  <div class="card">
+    <h2>③ 内添加 / 外添加换算</h2>
+    <p class="hint">按 A : B 的体积比配到指定总量。例：A 100 + B 5，目标总体积 100，各自该取多少？</p>
+    <div class="input-row">
+      <div class="field">
+        <label>A 体积</label>
+        <div class="input-box">
+          <input type="number" id="mxA" placeholder="如 100" oninput="renderMix()">
+        </div>
+      </div>
+      <div class="field">
+        <label>B 体积</label>
+        <div class="input-box">
+          <input type="number" id="mxB" placeholder="如 5" oninput="renderMix()">
+        </div>
+      </div>
+      <div class="field">
+        <label>目标体积</label>
+        <div class="input-box">
+          <input type="number" id="mxTarget" placeholder="如 100" oninput="renderMix()">
+          <select id="mxUnit" onchange="renderMix()">
+            <option value="L">L</option>
+            <option value="mL" selected>mL</option>
+            <option value="uL">µL</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="mix-result" id="mxResults">
+      <div class="placeholder" style="width:100%">输入后自动计算（A、B、目标三项都要填）</div>
+    </div>
+    <p class="formula-note">
+      内添加（等比缩小到目标总量）：A = 目标 × A/(A+B)，B = 目标 × B/(A+B)，合计 = 目标<br>
+      外添加（A 作基准达到目标，B 按比例外加）：A = 目标，B = 目标 × B/A，实际合计 = 目标 × (A+B)/A
+    </p>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+
+/* ---------- 数字格式化：千分位 + 智能保留位数 ---------- */
+function fmt(n) {
+  if (!isFinite(n)) return "—";
+  if (n === 0) return "0";
+  var abs = Math.abs(n);
+  var digits;
+  if (abs >= 1000) digits = 2;
+  else if (abs >= 100) digits = 3;
+  else if (abs >= 1) digits = 4;
+  else digits = 6; // 小数保留更多有效位
+  // 有效数字处理
+  var s = n.toFixed(digits);
+  // 去掉多余末尾的 0
+  s = s.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+  var parts = s.split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return parts.join(".");
+}
+function num(id) {
+  var v = parseFloat(document.getElementById(id).value);
+  return isNaN(v) ? null : v;
+}
+var UNITS = { L: { name: "L", factor: 1 }, mL: { name: "mL", factor: 1000 }, uL: { name: "µL", factor: 1000000 } };
+
+/* ---------- ① 体积换算 ---------- */
+function renderConvert() {
+  var v = num("cvVal"), unit = document.getElementById("cvUnit").value;
+  var box = document.getElementById("cvResults");
+  if (v === null) { box.innerHTML = '<div class="placeholder">输入数值后自动换算</div>'; return; }
+  var ml = v * UNITS[unit].factor;
+  var items = [
+    { label: "升", val: ml / 1000000, unit: "L" },
+    { label: "毫升", val: ml / 1000, unit: "mL" },
+    { label: "微升", val: ml, unit: "µL" }
+  ];
+  box.innerHTML = items.map(function (it, i) {
+    return '<div class="result-item' + (i === 1 ? " hl" : "") + '">' +
+      '<div class="r-label">' + it.label + '</div>' +
+      '<div class="r-val">' + fmt(it.val) + '</div>' +
+      '<div class="r-unit">' + it.unit + '</div></div>';
+  }).join("");
+}
+
+/* ---------- ② 加量计算 ---------- */
+function renderAdd() {
+  var vol = num("adVol"), unit = document.getElementById("adUnit").value;
+  var ratio = num("adRatio"), kind = document.getElementById("adKind").value;
+  var box = document.getElementById("adResults");
+  if (vol === null || ratio === null) {
+    box.innerHTML = '<div class="placeholder">输入后自动计算</div>'; return;
+  }
+  var KINDS = { pct: { f: 0.01, sym: "%", name: "百分之" }, pm: { f: 0.001, sym: "‰", name: "千分之" }, ppth: { f: 0.0001, sym: "‱", name: "万分之" } };
+  var k = KINDS[kind] || KINDS.pct;
+  var u = UNITS[unit].name;
+  var add = vol * ratio * k.f;
+  var total = vol + add;
+
+  // 换算成另外两种比例的表达（仅参考）
+  var others = Object.keys(KINDS).filter(function (x) { return x !== kind; })
+    .map(function (x) {
+      var kk = KINDS[x];
+      return fmt(ratio * k.f / kk.f) + kk.sym;
+    }).join(" ＝ ");
+
+  box.innerHTML =
+    '<div class="result-grid">' +
+      '<div class="result-item hl">' +
+        '<div class="r-label">加入量（' + fmt(ratio) + k.sym + '）</div>' +
+        '<div class="r-val">' + fmt(add) + '</div>' +
+        '<div class="r-unit">' + u + '</div></div>' +
+      '<div class="result-item">' +
+        '<div class="r-label">加完后总体积</div>' +
+        '<div class="r-val">' + fmt(total) + '</div>' +
+        '<div class="r-unit">' + u + '</div></div>' +
+    '</div>' +
+    '<div class="formula-note" style="margin-top:8px">' + fmt(vol) + ' ' + u + ' × ' + fmt(ratio) + k.sym +
+    ' ＝ ' + fmt(add) + ' ' + u + '；等效换算：' + fmt(ratio) + k.sym + ' ＝ ' + others + '</div>';
+}
+
+/* ---------- ③ 内添加 / 外添加 ---------- */
+function renderMix() {
+  var a = num("mxA"), b = num("mxB"), t = num("mxTarget");
+  var unit = document.getElementById("mxUnit").value;
+  var box = document.getElementById("mxResults");
+  if (a === null || b === null || t === null || a === 0) {
+    box.innerHTML = '<div class="placeholder" style="width:100%">输入后自动计算（A、B、目标三项都要填）</div>';
+    return;
+  }
+  var u = UNITS[unit].name;
+  // 内添加：A+B 合计 = 目标
+  var inA = t * a / (a + b), inB = t * b / (a + b);
+  // 外添加：A = 目标，B 按比例外加
+  var outA = t, outB = t * b / a, outTotal = t * (a + b) / a;
+
+  box.innerHTML =
+    '<div class="mix-block in">' +
+      '<div class="m-title">内添加 <span class="tag tag-blue">A + B = 目标</span></div>' +
+      '<div class="m-sub">两种成分合计正好等于目标体积</div>' +
+      '<div class="mix-line"><span class="ml-name">A 加入</span><span class="ml-val">' + fmt(inA) + ' ' + u + '</span></div>' +
+      '<div class="mix-line"><span class="ml-name">B 加入</span><span class="ml-val">' + fmt(inB) + ' ' + u + '</span></div>' +
+      '<div class="mix-line total"><span class="ml-name">合计</span><span class="ml-val">' + fmt(t) + ' ' + u + '</span></div>' +
+    '</div>' +
+    '<div class="mix-block out">' +
+      '<div class="m-title">外添加 <span class="tag tag-orange">A = 目标，B 外加</span></div>' +
+      '<div class="m-sub">A 取满目标量，B 按 A:B 比例往外加</div>' +
+      '<div class="mix-line"><span class="ml-name">A 加入</span><span class="ml-val">' + fmt(outA) + ' ' + u + '</span></div>' +
+      '<div class="mix-line"><span class="ml-name">B 加入</span><span class="ml-val">' + fmt(outB) + ' ' + u + '</span></div>' +
+      '<div class="mix-line total"><span class="ml-name">实际合计</span><span class="ml-val">' + fmt(outTotal) + ' ' + u + '</span></div>' +
+    '</div>';
+}
+
+/* 初始渲染 */
+renderConvert(); renderAdd(); renderMix();
+</script>
+</body>
+</html>
